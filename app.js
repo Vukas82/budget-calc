@@ -12,6 +12,13 @@
                 this.description = description,
                 this.value = value
         };
+        var calculateTotal = function (type) {
+            var sum = 0;
+            data.allItemes[type].forEach(function (current) {
+                sum += current.value
+            });
+            data.totals[type] = sum;
+        };
 
         var data = {
             allItemes: {
@@ -21,7 +28,9 @@
             totals: {
                 exp: 0,
                 inc: 0
-            }
+            },
+            budget: 0,
+            percentage: -1
         };
 
         return {
@@ -45,6 +54,35 @@
                 // return the new element
                 return newItem;
             },
+
+            calculatingBudget: function () {
+
+                // calculate total income and expenses
+                calculateTotal('exp');
+                calculateTotal('inc');
+
+                // calculate the budget: income - expenses
+                data.budget = data.totals.inc - data.totals.exp;
+
+                // calculate the percentage of income that we spent
+
+                if (data.totals.inc > 0) {
+                    data.percentage = Math.round((data.totals.exp / data.totals.inc) * 100);
+                } else {
+                    data.percentage = -1;
+                }
+
+            },
+
+            getBudget: function () {
+                return {
+                    budget: data.budget,
+                    totalInc: data.totals.inc,
+                    tottalExp: data.totals.exp,
+                    percentage: data.percentage
+                };
+            },
+
             testing: function () {
                 console.log(data);
             }
@@ -60,7 +98,14 @@
             inputValue: '.add__value',
             inputBtn: '.add__btn',
             incomeContainer: '.income__list',
-            expensesContainer: '.expenses__list'
+            expensesContainer: '.expenses__list',
+            budgetLabel: '.budget__value',
+            incomeLabel: '.budget__income--value',
+            expensesLabel: '.budget__expenses--value',
+            percentageLabel: '.budget__expenses--percentage',
+            // budgetValue: '.budget__value',
+            // budgetIncValue: '.budget__income--value',
+            // budgetExpValue: '.budget__expenses--value'
         }
 
         //some code
@@ -70,7 +115,8 @@
                 return {
                     type: document.querySelector(DOMstrings.inputType).value, // will be either inc or exp
                     description: document.querySelector(DOMstrings.inputDescription).value,
-                    value: document.querySelector(DOMstrings.inputValue).value
+                    value: parseFloat(document.querySelector(DOMstrings.inputValue).value) //parseFloat konvertuje string u broj!!!
+
                 };
             },
 
@@ -98,12 +144,44 @@
                 // insert HTML in the DOM
                 document.querySelector(element).insertAdjacentHTML('beforeend', newHtml);
 
+
             },
+
+            clearFields: function () {
+                var fields, fieldsArr;
+
+                fields = document.querySelectorAll(DOMstrings.inputDescription + ', ' + DOMstrings.inputValue);
+
+                fieldsArr = Array.prototype.slice.call(fields); // NACIN PREBACIVANJA LISTE KOJU VRACA QUERYSELEKTOR U ARREY !!!!!!!!
+                fieldsArr.forEach(function (current, index, array) {
+                    current.value = '';
+                });
+                fieldsArr[0].focus();
+            },
+
+            // insert new budget value in UI
+            displayBudget: function (obj) {
+                document.querySelector(DOMstrings.budgetLabel).textContent = obj.budget;
+                document.querySelector(DOMstrings.incomeLabel).textContent = obj.totalInc;
+                document.querySelector(DOMstrings.expensesLabel).textContent = obj.tottalExp;
+
+                if (obj.percentage > 0) {
+                    document.querySelector(DOMstrings.percentageLabel).textContent = obj.percentage + '%';
+                } else {
+                    document.querySelector(DOMstrings.percentageLabel).textContent = '---';
+                }
+            },
+            // addBudget: function (budget) {
+            //     var budgetValueUI;
+            //     budgetValueUI = DOMstrings.budgetValue;
+            //     document.querySelector(budgetValueUI).innerHTML = budget.budget;
+            // },
 
             getDOMstrings: function () {
                 return DOMstrings;
             }
         }
+
 
     })();
 
@@ -121,22 +199,41 @@
                 }
             });
         };
-        // some code
+
+        var updateBudget = function () {
+            // 1. calculate budget
+            budgetCtrl.calculatingBudget();
+            // 2. display the budget
+            var budget = budgetCtrl.getBudget();
+            // 3. display the budget on UI
+            UIctrl.displayBudget(budget);
+        }
 
         var ctrlAddIttem = function () {
             var input, newItem;
             // 1. get the field input data
             input = UIctrl.getInput();
-            // 2. add the item to thr bodget controler
-            newItem = budgetCtrl.addItem(input.type, input.description, input.value);
-            // 3. add the ittem to the UI
-            UIctrl.addListItem(newItem, input.type);
-            // 4. calculate budget
-            // 5. display the budget on UI
+
+            if (input.description !== "" && !isNaN(input.value) && input.value > 0) {
+                // 2. add the item to thr bodget controler
+                newItem = budgetCtrl.addItem(input.type, input.description, input.value);
+                // 3. add the ittem to the UI
+                UIctrl.addListItem(newItem, input.type);
+                // 4. clear the fields
+                UIctrl.clearFields();
+                // calculate and update budget
+                updateBudget();
+            }
         };
 
         return {
             init: function () {
+                UIctrl.displayBudget({
+                    budget: 0,
+                    totalInc: 0,
+                    tottalExp: 0,
+                    percentage: -1
+                });
                 console.log('aplication started');
                 return setupEventLesteners();
             }
