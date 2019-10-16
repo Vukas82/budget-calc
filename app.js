@@ -5,8 +5,21 @@
         var Expense = function (id, description, value) {
             this.id = id,
                 this.description = description,
-                this.value = value
+                this.value = value,
+                this.percentage = -1
         };
+
+        Expense.prototype.calcPercentages = function (totalIncome) {
+            if (totalIncome > 0) {
+                this.percentage = Math.round((this.value / totalIncome) * 100)
+            } else {
+                this.percentage = -1;
+            }
+        };
+        Expense.prototype.getPercentages = function () {
+            return this.percentage
+        };
+
         var Income = function (id, description, value) {
             this.id = id,
                 this.description = description,
@@ -88,6 +101,19 @@
 
             },
 
+            calculatePercentages: function () {
+                data.allItemes.exp.forEach(function (current) {
+                    current.calcPercentages(data.totals.inc);
+                });
+            },
+            gettingPercentages: function () {
+
+                var allPerc = data.allItemes.exp.map(function (current) {
+                    return current.getPercentages();
+                });
+                return allPerc;
+            },
+
             getBudget: function () {
                 return {
                     budget: data.budget,
@@ -117,10 +143,8 @@
             incomeLabel: '.budget__income--value',
             expensesLabel: '.budget__expenses--value',
             percentageLabel: '.budget__expenses--percentage',
-            container: '.container'
-            // budgetValue: '.budget__value',
-            // budgetIncValue: '.budget__income--value',
-            // budgetExpValue: '.budget__expenses--value'
+            container: '.container',
+            exppensesPercLabel: '.item__percentage'
         }
 
         //some code
@@ -161,6 +185,11 @@
 
 
             },
+            deleteListItem: function (selectorID) {
+                var el = document.getElementById(selectorID);
+                el.parentNode.removeChild(el);
+
+            },
 
             clearFields: function () {
                 var fields, fieldsArr;
@@ -186,11 +215,28 @@
                     document.querySelector(DOMstrings.percentageLabel).textContent = '---';
                 }
             },
-            // addBudget: function (budget) {
-            //     var budgetValueUI;
-            //     budgetValueUI = DOMstrings.budgetValue;
-            //     document.querySelector(budgetValueUI).innerHTML = budget.budget;
-            // },
+
+            displayPercentages: function (percentages) {
+
+                var fields = document.querySelectorAll(DOMstrings.exppensesPercLabel);
+
+                var nodeListForEach = function (list, callback) {
+                    for (var i = 0; i < list.length; i++) {
+                        callback(list[i], i)
+                    }
+                };
+
+                nodeListForEach(fields, function (current, ndex) {
+                    //some code
+                    if (percentages[index] > 0) {
+                        current.textContent = percentages[index] + '%';
+                    } else {
+                        current.textContent = '---';
+                    }
+
+                });
+
+            },
 
             getDOMstrings: function () {
                 return DOMstrings;
@@ -224,7 +270,19 @@
             var budget = budgetCtrl.getBudget();
             // 3. display the budget on UI
             UIctrl.displayBudget(budget);
-        }
+        };
+
+        var updatePercentages = function () {
+
+
+            // calculate percentage
+            budgetCtrl.calculatePercentages();
+            // read percentage from the budget controler
+            var percentages = budgetCtrl.gettingPercentages();
+            // update the UI with the new percentages
+
+            console.log(percentages)
+        };
 
         var ctrlAddIttem = function () {
             var input, newItem;
@@ -238,8 +296,11 @@
                 UIctrl.addListItem(newItem, input.type);
                 // 4. clear the fields
                 UIctrl.clearFields();
-                // calculate and update budget
+                // 5. calculate and update budget
                 updateBudget();
+                // 5. calculate and update percentages
+                updatePercentages();
+
             }
         };
 
@@ -258,9 +319,11 @@
                 // 1. delete the item from data strukture
                 budgetCtrl.deleteItem(type, ID);
                 // 2. delete the item from UI
-
+                UIctrl.deleteListItem(itemID)
                 // 3. update and show the new budget
-
+                updateBudget();
+                // 4. update and show new percentages
+                updatePercentages();
             }
         }
 
