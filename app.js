@@ -144,7 +144,8 @@
             expensesLabel: '.budget__expenses--value',
             percentageLabel: '.budget__expenses--percentage',
             container: '.container',
-            exppensesPercLabel: '.item__percentage'
+            exppensesPercLabel: '.item__percentage',
+            dateLabel: '.budget__title--month'
         };
         var formatNumber = function (num, type) {
             var numSplit, int, dec, type;
@@ -168,6 +169,11 @@
             dec = numSplit[1];
 
             return (type === 'exp' ? '-' : '+') + ' ' + int + '.' + dec;
+        };
+        var nodeListForEach = function (list, callback) {
+            for (var i = 0; i < list.length; i++) {
+                callback(list[i], i)
+            }
         };
 
         //some code
@@ -246,12 +252,6 @@
 
                 var fields = document.querySelectorAll(DOMstrings.exppensesPercLabel);
 
-                var nodeListForEach = function (list, callback) {
-                    for (var i = 0; i < list.length; i++) {
-                        callback(list[i], i)
-                    }
-                };
-
                 nodeListForEach(fields, function (current, index) {
                     //some code
                     if (percentages[index] > 0) {
@@ -262,6 +262,33 @@
 
                 });
             },
+
+            displayMonth: () => {
+                let now, month, months, year;
+                now = new Date();
+                // let bozic = new Date(2019, 0, 7);
+                months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', ];
+                year = now.getFullYear();
+                month = now.getMonth();
+                document.querySelector(DOMstrings.dateLabel).textContent = months[month] + ' ' + year;
+            },
+
+            changedType: () => {
+
+                let fields = document.querySelectorAll(
+                    DOMstrings.inputType + ',' +
+                    DOMstrings.inputDescription + ',' +
+                    DOMstrings.inputValue
+                );
+
+                nodeListForEach(fields, function (cur) {
+                    cur.classList.toggle('red-focus');
+                });
+
+                document.querySelector(DOMstrings.inputBtn).classList.toggle('red');
+
+            },
+
             getDOMstrings: function () {
                 return DOMstrings;
             }
@@ -284,7 +311,8 @@
                 }
             });
 
-            document.querySelector(DOM.container).addEventListener('click', ctrlDeleteItem)
+            document.querySelector(DOM.container).addEventListener('click', ctrlDeleteItem);
+            document.querySelector(DOM.inputType).addEventListener('change', UIctrl.changedType);
         };
 
         var updateBudget = function () {
@@ -354,6 +382,8 @@
 
         return {
             init: function () {
+                UIctrl.displayMonth();
+
                 UIctrl.displayBudget({
                     budget: 0,
                     totalInc: 0,
